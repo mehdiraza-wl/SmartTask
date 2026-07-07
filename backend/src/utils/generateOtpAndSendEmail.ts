@@ -1,5 +1,5 @@
-import { sendMail } from "../configs/mailsend.js";
 import type User from "../models/user.js";
+import emailQueue from "../queues/email.queue.js";
 
 export const generateOtpAndSendEmail = async (user: User) => {
     const verificationToken=Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
@@ -7,5 +7,9 @@ export const generateOtpAndSendEmail = async (user: User) => {
     user.verificationToken=verificationToken
     user.verificationTokenExpiry=verificationTokenExpiry
     await user.save()
-    await sendMail(user.email, "Verification Code", verificationToken)
+    await emailQueue.add({
+        email: user.email,
+        subject: "Verification Code",
+        message: verificationToken,
+});
 }

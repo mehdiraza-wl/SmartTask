@@ -14,7 +14,6 @@ const transporter = createTransport({
 export async function sendMail(to:string, sub:string, message:string) {
 try {
   const info = await transporter.sendMail({
-    // from: '"Example Team" <team@example.com>', // sender address
     to, // list of recipients
     subject: sub, // subject line
     text: message, // plain text body
@@ -24,6 +23,4 @@ try {
 } catch (err) {
   console.error("Error while sending mail:", err);
 }
-
-
 }

@@ -2,13 +2,13 @@ import User from '../models/user.js';
 import bcrypt from 'bcryptjs';
 import type { Request, Response } from 'express';
 import { generateRefreshTokenAndSetCookie } from '../utils/generateTokenAndSetCookie.js';
-import { sendMail } from '../configs/mailsend.js';
 import { generateJWT } from '../utils/generateJWT.js';
 import RefreshToken from '../models/refreshToken.js';
 import crypto from 'node:crypto';
 import { Op } from 'sequelize';
 import jwt from "jsonwebtoken"
 import { generateOtpAndSendEmail } from '../utils/generateOtpAndSendEmail.js';
+import emailQueue from '../queues/email.queue.js';
 
 // For registering users, we will receive username, email and password
 export const createUser= async (req: Request, res: Response) => {
@@ -25,7 +25,11 @@ export const createUser= async (req: Request, res: Response) => {
     const verificationTokenExpiry=new Date(Date.now() + (15 * 60 * 1000)); //15 minutes expiry
     const hashPassword=await bcrypt.hash(password,10)
     const user = await User.create({username,email, hashPassword , verificationToken, verificationTokenExpiry})
-    await sendMail(user.email, "Verification Code", verificationToken)
+    await emailQueue.add({
+        email: user.email,
+        subject: "Verification Code",
+        message: verificationToken,
+});
     res.status(201).json({
         success: true,
         message: "Verification code sent",
@@ -114,7 +118,11 @@ export const resetPassword = async (req:Request, res:Response) => {
     user.resetPasswordToken = resetToken
     user.resetPasswordTokenExpiry=resetTokenExpiry
     await user.save()
-    await sendMail(user.email,"Reset Password",`You can reset your password using the link: ${process.env.CLIENT_URL}/reset-password/${resetToken}`)
+    await emailQueue.add({
+        email: user.email,
+        subject: "Reset Password",
+        message: `You can reset your password using the link: ${process.env.CLIENT_URL}/reset-password/${resetToken}`,
+});
     res.status(200).json({
         success: true,
         message: "Please check your email."
@@ -144,7 +152,11 @@ export const updatePassword = async (req:Request, res:Response) => {
     user.hashPassword=hashPassword
     user.resetPasswordTokenExpiry=new Date()  //Old token expired
     await user.save()
-    await sendMail(user.email, "Password Reset Successfully", "You password has been updated successfully. You can login with your new password.")
+    await emailQueue.add({
+        email: user.email,
+        subject: "Password Reset Successfully",
+        message: "You password has been updated successfully. You can login with your new password."
+    })
     res.status(200).json({
         success: true,
         message: "Password updated successfully"
