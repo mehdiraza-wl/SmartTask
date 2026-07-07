@@ -14,3 +14,14 @@ export const signupValidation = [
     .notEmpty()
     .withMessage("Username is required"),
 ];
+
+export const verifyEmail = [
+  body("email")
+    .isEmail()
+    .withMessage("Invalid email")
+]
+
+export const passwordValidation = [body("password")
+    .isLength({ min: 8 })
+    .withMessage("Password must be at least 8 characters"),
+]
