@@ -1,22 +1,11 @@
 import express from 'express';
-import type { Request, Response } from 'express';
+import authRouter from './routes/auth.route.js'
 
 const app = express();
 
 app.use(express.json());
 
-app.get('/', (req: Request, res: Response) => {
-  res.send('Express + TypeScript Server is running! New text');
-});
-
-app.get('/check', (req: Request, res: Response) => {
-  res.send('Finally Worked');
-});
-
-app.get('/test', (req: Request, res: Response) => {
-  res.send('Testing');
-});
-
+app.use('/api/auth', authRouter)
 
 
 export default app;
