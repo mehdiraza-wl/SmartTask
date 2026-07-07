@@ -1,6 +1,6 @@
 import User from '../models/user.js';
 import bcrypt from 'bcryptjs';
-import type { Request, Response } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { generateRefreshTokenAndSetCookie } from '../utils/generateTokenAndSetCookie.js';
 import { generateJWT } from '../utils/generateJWT.js';
 import RefreshToken from '../models/refreshToken.js';
@@ -9,17 +9,15 @@ import { Op } from 'sequelize';
 import jwt from "jsonwebtoken"
 import { generateOtpAndSendEmail } from '../utils/generateOtpAndSendEmail.js';
 import emailQueue from '../queues/email.queue.js';
+import { AppError } from '../utils/appError.js';
 
 // For registering users, we will receive username, email and password
-export const createUser= async (req: Request, res: Response) => {
+export const createUser= async (req: Request, res: Response,next: NextFunction) => {
     const {username, email, password} = req.body;
 
     const existingUser=await User.findOne({where: {email}})
     if(existingUser){
-        res.status(400).json({
-                    "success": false,
-                    "error": "User already exists"
-                })
+         throw new AppError("User already exists!!", 400);
     }
     const verificationToken=Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
     const verificationTokenExpiry=new Date(Date.now() + (15 * 60 * 1000)); //15 minutes expiry
@@ -37,7 +35,7 @@ export const createUser= async (req: Request, res: Response) => {
 }
 
 // This endpoint is handling MFA and email-verification after signup
-export const verifyUser= async (req:Request, res:Response) => {
+export const verifyUser= async (req:Request, res:Response, next: NextFunction) => {
     const {email, verificationToken} = req.body;
 
     const user = await User.findOne ({
@@ -51,9 +49,7 @@ export const verifyUser= async (req:Request, res:Response) => {
     })
 
     if (!user) {
-        return res.status(400).json({
-            message: "Verification token has expired.",
-        });
+         throw new AppError("Verification token expired", 400);
     }
     if(!user.isVerified){
         user.isVerified = true
@@ -70,9 +66,12 @@ export const verifyUser= async (req:Request, res:Response) => {
 }
 
 // Old refresh token expired and clearing cookie for logout
-export const logout = async (req:Request, res:Response) => {
+export const logout = async (req:Request, res:Response, next: NextFunction) => {
     const refreshToken = req.cookies.refreshToken
-
+    if (!refreshToken) {
+         throw new AppError("No refresh token found", 400);
+    }
+    
     const refreshTokenHash = crypto
         .createHash("sha256")
         .update(refreshToken)
@@ -84,10 +83,7 @@ export const logout = async (req:Request, res:Response) => {
         }
     });
     if(!storedRefreshToken){
-        return res.status(400).json({
-            success: false,
-            message: "Invalid refresh token"
-        })
+         throw new AppError("Invalid refresh token", 400);
     }
     storedRefreshToken.isRevoked = true;
     await storedRefreshToken.save()
@@ -99,7 +95,7 @@ export const logout = async (req:Request, res:Response) => {
 }
 
 // Handling forget password and sending a link by which user can reset his password
-export const resetPassword = async (req:Request, res:Response) => {
+export const resetPassword = async (req:Request, res:Response, next: NextFunction) => {
     const {email} = req.body
     const user= await User.findOne({
         where: {
@@ -107,10 +103,7 @@ export const resetPassword = async (req:Request, res:Response) => {
         }
     })
     if(!user){
-        return res.status(400).json({
-            success: false,
-            message: "User does not exist"
-        })
+         throw new AppError("User already exists", 400);
     }
 
     const resetToken = crypto.randomBytes(20).toString("hex")
@@ -130,7 +123,7 @@ export const resetPassword = async (req:Request, res:Response) => {
 }
 
 // Resetting user password with valid token
-export const updatePassword = async (req:Request, res:Response) => {
+export const updatePassword = async (req:Request, res:Response, next: NextFunction) => {
     const {token} = req.params
     const {password} = req.body
     
@@ -143,10 +136,7 @@ export const updatePassword = async (req:Request, res:Response) => {
         },
     })
     if(!user)
-        return res.status(400).json({
-            success: false,
-            message: "Invalid or expired reset token."
-        })
+         throw new AppError("Invalid or expired reset token", 400);
 
     const hashPassword=await bcrypt.hash(password, 10)
     user.hashPassword=hashPassword
@@ -164,7 +154,7 @@ export const updatePassword = async (req:Request, res:Response) => {
 }
 
 // Implementing refresh token rotation
-export const handleRefreshToken = async (req:Request, res:Response) => {
+export const handleRefreshToken = async (req:Request, res:Response, next: NextFunction) => {
     const providedToken = req.cookies.refreshToken
     const refreshTokenHash = crypto
         .createHash("sha256")
@@ -176,12 +166,8 @@ export const handleRefreshToken = async (req:Request, res:Response) => {
             token_hash: refreshTokenHash,
         }
     });
-    if(!storedRefreshToken){
-        return res.status(400).json({
-            success: false,
-            message: "Invalid refresh token"
-        })
-    }
+    if(!storedRefreshToken) 
+        throw new AppError("Invalid refresh token", 400);
 
     if(storedRefreshToken.isRevoked){ //If token reused, invalidating all other refresh tokens
         interface JwtPayload {
@@ -198,10 +184,7 @@ export const handleRefreshToken = async (req:Request, res:Response) => {
             }
         }
         );
-        return res.status(400).json({
-            success: false,
-            message: "Reusing a refresh token"
-        })
+        throw new AppError("Refresh token can only be used once", 400);
     }
 
     storedRefreshToken.isRevoked = true;
@@ -216,29 +199,19 @@ export const handleRefreshToken = async (req:Request, res:Response) => {
 }
 
 // User will provide email and password, after verifying credentials, he will receive an OTP on his email for verification
-export const login = async (req:Request, res:Response) => {
+export const login = async (req:Request, res:Response, next: NextFunction) => {
     const {email, password} = req.body
     const existingUser=await User.findOne({where: {email}})
     if(!existingUser)
-        return res.status(400).json({
-                    "success": false,
-                    "error": "User doesn't exists"
-                })
+        throw new AppError("User already exists", 400);
     
     if(!existingUser.isVerified)
-        return res.status(400).json({
-                    "success": false,
-                    "error": "User is not verified."
-                })
+        throw new AppError("User is not verified", 400);
     
     const passwordMatched = await bcrypt.compare(password, existingUser.hashPassword)
     if(!passwordMatched){
-        return res.status(400).json({
-                    "success": false,
-                    "error": "Incorrect Password"
-                })
+         throw new AppError("Incorrect password", 400);
     }
-
     await generateOtpAndSendEmail(existingUser)
     res.status(200).json({
         success: true,

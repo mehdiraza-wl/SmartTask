@@ -1,8 +1,7 @@
-// middlewares/validateRequest.ts
-
 import { validationResult } from "express-validator";
 import type { Request, Response, NextFunction } from "express";
 
+// validating the data passed using express-validator and returning in case of errors
 export default function validateRequest(
   req: Request,
   res: Response,
