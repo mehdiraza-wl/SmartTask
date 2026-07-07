@@ -25,3 +25,6 @@ export const passwordValidation = [body("password")
     .isLength({ min: 8 })
     .withMessage("Password must be at least 8 characters"),
 ]
+
+
+export const verifyLoginCredentials = [...verifyEmail, ...passwordValidation]

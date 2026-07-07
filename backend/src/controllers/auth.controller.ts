@@ -8,12 +8,11 @@ import RefreshToken from '../models/refreshToken.js';
 import crypto from 'node:crypto';
 import { Op } from 'sequelize';
 import jwt from "jsonwebtoken"
+import { generateOtpAndSendEmail } from '../utils/generateOtpAndSendEmail.js';
 
 export const createUser= async (req: Request, res: Response) => {
-    //Will receive 3 things, username, email and password
     const {username, email, password} = req.body;
 
-    //Verify that user don't exist
     const existingUser=await User.findOne({where: {email}})
     if(existingUser){
         res.status(400).json({
@@ -193,5 +192,35 @@ export const handleRefreshToken = async (req:Request, res:Response) => {
     res.status(200).json({
         success: true,
         accessToken
+    })
+}
+
+export const login = async (req:Request, res:Response) => {
+    const {email, password} = req.body
+    const existingUser=await User.findOne({where: {email}})
+    if(!existingUser)
+        return res.status(400).json({
+                    "success": false,
+                    "error": "User doesn't exists"
+                })
+    
+    if(!existingUser.isVerified)
+        return res.status(400).json({
+                    "success": false,
+                    "error": "User is not verified."
+                })
+    
+    const passwordMatched = await bcrypt.compare(password, existingUser.hashPassword)
+    if(!passwordMatched){
+        return res.status(400).json({
+                    "success": false,
+                    "error": "Incorrect Password"
+                })
+    }
+
+    await generateOtpAndSendEmail(existingUser)
+    res.status(200).json({
+        success: true,
+        message: "Verification code sent."
     })
 }
