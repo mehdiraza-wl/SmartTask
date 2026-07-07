@@ -10,6 +10,7 @@ import { Op } from 'sequelize';
 import jwt from "jsonwebtoken"
 import { generateOtpAndSendEmail } from '../utils/generateOtpAndSendEmail.js';
 
+// For registering users, we will receive username, email and password
 export const createUser= async (req: Request, res: Response) => {
     const {username, email, password} = req.body;
 
@@ -31,17 +32,17 @@ export const createUser= async (req: Request, res: Response) => {
     })
 }
 
-
+// This endpoint is handling MFA and email-verification after signup
 export const verifyUser= async (req:Request, res:Response) => {
     const {email, verificationToken} = req.body;
 
     const user = await User.findOne ({
         where: {
             email,
+            verificationToken,
             verificationTokenExpiry: {
                 [Op.gt]: new Date()
             },
-            verificationToken
         }
     })
 
@@ -56,13 +57,15 @@ export const verifyUser= async (req:Request, res:Response) => {
     }
     await generateRefreshTokenAndSetCookie(res, user.id)
     const accessToken=await generateJWT(user.id, process.env.JWT_ACCESS_SECRET || 'my_secret')
-    user.verificationTokenExpiry=new Date()  //Token expired
+    user.verificationTokenExpiry=new Date()  //Old token expired
+    await user.save()
     res.status(200).json({
         success: true,
         accessToken
     })
 }
 
+// Old refresh token expired and clearing cookie for logout
 export const logout = async (req:Request, res:Response) => {
     const refreshToken = req.cookies.refreshToken
 
@@ -91,6 +94,7 @@ export const logout = async (req:Request, res:Response) => {
     })
 }
 
+// Handling forget password and sending a link by which user can reset his password
 export const resetPassword = async (req:Request, res:Response) => {
     const {email} = req.body
     const user= await User.findOne({
@@ -109,14 +113,15 @@ export const resetPassword = async (req:Request, res:Response) => {
     const resetTokenExpiry= new Date(Date.now() + (15 * 60 * 1000));
     user.resetPasswordToken = resetToken
     user.resetPasswordTokenExpiry=resetTokenExpiry
-    await sendMail(user.email,"Reset Password",`You can reset your password using the link: ${process.env.CLIENT_URL}/reset-password/${resetToken}`)
     await user.save()
+    await sendMail(user.email,"Reset Password",`You can reset your password using the link: ${process.env.CLIENT_URL}/reset-password/${resetToken}`)
     res.status(200).json({
         success: true,
         message: "Please check your email."
     })
 }
 
+// Resetting user password with valid token
 export const updatePassword = async (req:Request, res:Response) => {
     const {token} = req.params
     const {password} = req.body
@@ -132,12 +137,12 @@ export const updatePassword = async (req:Request, res:Response) => {
     if(!user)
         return res.status(400).json({
             success: false,
-            message: "Invalid or Expired reset token."
+            message: "Invalid or expired reset token."
         })
 
     const hashPassword=await bcrypt.hash(password, 10)
     user.hashPassword=hashPassword
-    user.resetPasswordTokenExpiry=new Date()
+    user.resetPasswordTokenExpiry=new Date()  //Old token expired
     await user.save()
     await sendMail(user.email, "Password Reset Successfully", "You password has been updated successfully. You can login with your new password.")
     res.status(200).json({
@@ -146,7 +151,7 @@ export const updatePassword = async (req:Request, res:Response) => {
     })
 }
 
-
+// Implementing refresh token rotation
 export const handleRefreshToken = async (req:Request, res:Response) => {
     const providedToken = req.cookies.refreshToken
     const refreshTokenHash = crypto
@@ -166,35 +171,39 @@ export const handleRefreshToken = async (req:Request, res:Response) => {
         })
     }
 
-
-
-    if(storedRefreshToken.isRevoked){ //IF Token reused
-    interface JwtPayload {
-        id: string
-    }
-    const user=jwt.verify(providedToken, process.env.JWT_REFRESH_SECRET || 'my_secret') as JwtPayload
-    await RefreshToken.update(
-    {
-        isRevoked: true
-    },
-    {
-        where: {
-        user_id: user.id
+    if(storedRefreshToken.isRevoked){ //If token reused, invalidating all other refresh tokens
+        interface JwtPayload {
+            id: string
         }
-    }
-);
+        const user=jwt.verify(providedToken, process.env.JWT_REFRESH_SECRET || 'my_secret') as JwtPayload
+        await RefreshToken.update(
+        {
+            isRevoked: true
+        },
+        {
+            where: {
+            user_id: user.id
+            }
+        }
+        );
+        return res.status(400).json({
+            success: false,
+            message: "Reusing a refresh token"
+        })
     }
 
     storedRefreshToken.isRevoked = true;
     
     await generateRefreshTokenAndSetCookie(res, storedRefreshToken.user_id)
     const accessToken=await generateJWT(storedRefreshToken.user_id, process.env.JWT_ACCESS_SECRET || 'my_secret')
+
     res.status(200).json({
         success: true,
         accessToken
     })
 }
 
+// User will provide email and password, after verifying credentials, he will receive an OTP on his email for verification
 export const login = async (req:Request, res:Response) => {
     const {email, password} = req.body
     const existingUser=await User.findOne({where: {email}})
