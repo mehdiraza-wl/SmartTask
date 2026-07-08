@@ -7,7 +7,7 @@ import bcrypt from "bcryptjs";
 import crypto from 'node:crypto';
 
 export const generateRefreshTokenAndSetCookie = async (res: Response,userId: number) => {
-    const refreshToken=await generateJWT(userId, process.env.JWT_REFRESH_SECRET || 'my_secret');
+    const refreshToken=await generateJWT(userId, process.env.JWT_REFRESH_SECRET || 'my_secret', process.env.JWT_REFRESH_EXPIRY || '7d');
     
 
     const refreshTokenHash = crypto
@@ -23,7 +23,7 @@ export const generateRefreshTokenAndSetCookie = async (res: Response,userId: num
     res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
         sameSite: "strict",
-        maxAge: 15*24*60*60*1000 //15 days
+        maxAge: 7*24*60*60*1000 //7 days
     })
     return refreshToken;
 }

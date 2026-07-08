@@ -56,7 +56,7 @@ export const verifyUser= async (req:Request, res:Response, next: NextFunction) =
         await user.save()
     }
     await generateRefreshTokenAndSetCookie(res, user.id)
-    const accessToken=await generateJWT(user.id, process.env.JWT_ACCESS_SECRET || 'my_secret')
+    const accessToken=await generateJWT(user.id, process.env.JWT_ACCESS_SECRET || 'my_secret', process.env.JWT_ACCESS_EXPIRY || '15m')
     user.verificationTokenExpiry=new Date()  //Old token expired
     await user.save()
     res.status(200).json({
@@ -191,9 +191,9 @@ export const handleRefreshToken = async (req:Request, res:Response, next: NextFu
     }
 
     storedRefreshToken.isRevoked = true;
-    
+    await storedRefreshToken.save()
     await generateRefreshTokenAndSetCookie(res, storedRefreshToken.user_id)
-    const accessToken=await generateJWT(storedRefreshToken.user_id, process.env.JWT_ACCESS_SECRET || 'my_secret')
+    const accessToken=await generateJWT(storedRefreshToken.user_id, process.env.JWT_ACCESS_SECRET || 'my_secret', process.env.JWT_ACCESS_EXPIRY || '15m')
 
     res.status(200).json({
         success: true,

@@ -1,12 +1,12 @@
-import jwt from "jsonwebtoken"
-import 'dotenv/config'; 
+import jwt from 'jsonwebtoken';
 
-console.log(process.env.JWT_SECRET)
-
-
-export const generateJWT = async (userId: number, secret: string): Promise<string> => {
-    const token: string=await jwt.sign({id: userId}, secret, {
-        expiresIn: "7d",
+export const generateJWT = (
+    userId: number, 
+    secret: string, 
+    expiry: string
+): string => {
+    const token: string = jwt.sign({ id: userId }, secret, {
+        expiresIn: expiry as any
     })
     return token;
-}
+};
