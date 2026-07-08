@@ -43,3 +43,15 @@ export const updateProfile = async(req: Request, res: Response, next: NextFuncti
         message: "Profile updated successfully"
     })
 }
+
+export const getProfile = async(req: Request, res: Response, next: NextFunction) => {
+    const userId=req.user!.id
+    const queryUser=await User.findByPk(userId,{
+        attributes: ['username', 'email', 'isVerified', 'createdAt']
+    })
+    console.log();
+    res.status(200).json({
+        success: true,
+        data: queryUser?.dataValues
+    })
+}
