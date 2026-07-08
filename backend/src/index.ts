@@ -1,22 +1,14 @@
 import express from 'express';
-import type { Request, Response } from 'express';
-
+import authRouter from './routes/auth.route.js'
+import cookieParser from 'cookie-parser'
+import { errorHandler } from './middlewares/errorHandler.js';
 const app = express();
 
 app.use(express.json());
+app.use(cookieParser())
 
-app.get('/', (req: Request, res: Response) => {
-  res.send('Express + TypeScript Server is running! New text');
-});
+app.use('/api/auth', authRouter)
 
-app.get('/check', (req: Request, res: Response) => {
-  res.send('Finally Worked');
-});
-
-app.get('/test', (req: Request, res: Response) => {
-  res.send('Testing');
-});
-
-
+app.use(errorHandler);
 
 export default app;

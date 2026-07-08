@@ -10,7 +10,6 @@ export async function connectDatabase() {
     try {
         await sequelize.authenticate();
         console.log("Connection successful");
-        
     } catch (error) {
         console.log(error);
     }

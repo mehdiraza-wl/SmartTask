@@ -4,5 +4,5 @@ import 'dotenv/config';
 
 app.listen(process.env.PORT, async () => {
     await connectDatabase()
-    console.log(`[server]: Server is running`);
+    console.log(`[server]: The Server is running`);
 });
