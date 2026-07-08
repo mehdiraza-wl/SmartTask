@@ -9,25 +9,14 @@ class User extends Model<
   InferCreationAttributes<User>
 > {
   declare id: CreationOptional<number>;
-
   declare username: string;
   declare email: string;
   declare hashPassword: string;
-
   declare isVerified: CreationOptional<boolean>;
-
   declare resetPasswordToken: string | null;
   declare resetPasswordTokenExpiry: Date | null;
-
-  declare role: CreationOptional<"admin" | "manager" | "member">;
-
   declare verificationToken: string;
   declare verificationTokenExpiry: Date;
-
-  declare project_id: number | null;
-
-  declare active: CreationOptional<boolean>;
-
   declare readonly createdAt: CreationOptional<Date>;
   declare readonly updatedAt: CreationOptional<Date>;
 }
@@ -70,13 +59,6 @@ User.init(
       type: DataTypes.DATE,
       allowNull: true,
     },
-
-    role: {
-      type: DataTypes.ENUM("admin", "manager", "member"),
-      allowNull: false,
-      defaultValue: "member",
-    },
-
     verificationToken: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -86,17 +68,6 @@ User.init(
       type: DataTypes.DATE,
       allowNull: false,
     },
-
-    project_id: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-    },
-
-    active: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: true,
-    },
-
     createdAt: DataTypes.DATE,
     updatedAt: DataTypes.DATE,
   },
