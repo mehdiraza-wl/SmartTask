@@ -69,7 +69,7 @@ export const verifyUser= async (req:Request, res:Response, next: NextFunction) =
 export const logout = async (req:Request, res:Response, next: NextFunction) => {
     const refreshToken = req.cookies.refreshToken
     if (!refreshToken) {
-         throw new AppError("No refresh token found", 400);
+         throw new AppError("No refresh token found", 401);
     }
     
     const refreshTokenHash = crypto
@@ -156,6 +156,9 @@ export const updatePassword = async (req:Request, res:Response, next: NextFuncti
 // Implementing refresh token rotation
 export const handleRefreshToken = async (req:Request, res:Response, next: NextFunction) => {
     const providedToken = req.cookies.refreshToken
+     if (!providedToken) {
+         throw new AppError("No refresh token found", 401);
+    }
     const refreshTokenHash = crypto
         .createHash("sha256")
         .update(providedToken)
@@ -184,7 +187,7 @@ export const handleRefreshToken = async (req:Request, res:Response, next: NextFu
             }
         }
         );
-        throw new AppError("Refresh token can only be used once", 400);
+        throw new AppError("Refresh token can only be used once", 403);
     }
 
     storedRefreshToken.isRevoked = true;
@@ -203,14 +206,14 @@ export const login = async (req:Request, res:Response, next: NextFunction) => {
     const {email, password} = req.body
     const existingUser=await User.findOne({where: {email}})
     if(!existingUser)
-        throw new AppError("User already exists", 400);
+        throw new AppError("User does not exist", 404);
     
     if(!existingUser.isVerified)
-        throw new AppError("User is not verified", 400);
+        throw new AppError("User is not verified", 401);
     
     const passwordMatched = await bcrypt.compare(password, existingUser.hashPassword)
     if(!passwordMatched){
-         throw new AppError("Incorrect password", 400);
+         throw new AppError("Incorrect password", 401);
     }
     await generateOtpAndSendEmail(existingUser)
     res.status(200).json({
