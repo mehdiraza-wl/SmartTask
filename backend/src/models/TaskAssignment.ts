@@ -23,13 +23,9 @@ class TaskAssignment extends Model<
 
   declare user_id: number;
 
-  declare assignment_type:
-    | "owner"
-    | "collaborator";
-
+  declare assignment_type: "owner" | "collaborator";
 
   declare assigned_by_user_id: number;
-
 
   // Associations
 
