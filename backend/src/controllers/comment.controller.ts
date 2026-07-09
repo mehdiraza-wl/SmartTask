@@ -158,3 +158,41 @@ export const updateComment = async (req:Request, res:Response, next: NextFunctio
 
     });
 }
+
+export const deleteComment = async (req:Request, res:Response, next: NextFunction) => {
+    const { projectId, taskId, commentId } = req.params;
+
+    await sequelize.transaction(async (transaction) => {
+
+        const task = await Task.findOne({
+            where: {
+                id: taskId,
+                project_id: projectId,
+            },
+            transaction,
+        });
+
+        if (!task) {
+            throw new AppError("Task not found.", 404);
+        }
+
+        const comment = await TaskComment.findOne({
+            where: {
+                id: commentId,
+                task_id: taskId,
+            },
+            transaction,
+        });
+
+        if (!comment) {
+            throw new AppError("Comment not found.", 404);
+        }
+
+        await comment.destroy({ transaction });
+
+        res.status(200).json({
+            success: true,
+            message: "Comment deleted successfully.",
+        });
+    });
+}
