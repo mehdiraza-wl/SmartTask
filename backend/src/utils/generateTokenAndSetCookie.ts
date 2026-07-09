@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken"
 import type {Response} from 'express'
 import 'dotenv/config';
 import { generateJWT } from "./generateJWT.js";
-import RefreshToken from "../models/refreshToken.js";
+import RefreshToken from "../models/RefreshToken.js";
 import bcrypt from "bcryptjs";
 import crypto from 'node:crypto';
 

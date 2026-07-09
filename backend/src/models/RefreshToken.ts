@@ -5,8 +5,10 @@ import type {
   InferAttributes,
   InferCreationAttributes,
   CreationOptional,
+  NonAttribute
 } from "sequelize";
 import sequelize from "../configs/database.js";
+import User from "./User.js";
 
 class RefreshToken extends Model<
   InferAttributes<RefreshToken>,
@@ -20,6 +22,7 @@ class RefreshToken extends Model<
 
   declare readonly createdAt: CreationOptional<Date>;
   declare readonly updatedAt: CreationOptional<Date>;
+  declare user?: NonAttribute<User>;
 }
 
 RefreshToken.init(

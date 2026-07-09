@@ -1,9 +1,9 @@
-import User from '../models/user.js';
+import {User} from '../models/index.js';
 import bcrypt from 'bcryptjs';
 import type { Request, Response, NextFunction } from 'express';
 import { generateRefreshTokenAndSetCookie } from '../utils/generateTokenAndSetCookie.js';
 import { generateJWT } from '../utils/generateJWT.js';
-import RefreshToken from '../models/refreshToken.js';
+import {RefreshToken} from '../models/index.js';
 import crypto from 'node:crypto';
 import { Op } from 'sequelize';
 import jwt from "jsonwebtoken"
@@ -221,3 +221,4 @@ export const login = async (req:Request, res:Response, next: NextFunction) => {
         message: "Verification code sent."
     })
 }
+
