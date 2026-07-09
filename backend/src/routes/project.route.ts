@@ -5,9 +5,10 @@ import { createProject, deleteProject, getAllProjects, getProject, sendExternalI
 import { createProjectValidation } from "../middlewares/projectValidation.js";
 import validateRequest from "../middlewares/validateResult.js";
 import { authorizeProjectRoles } from "../middlewares/authorizeProjectRoles.js";
-
+import taskRouter from "../routes/task.route.js"
 
 router.use(passport.authenticate('jwt', { session: false }))
+router.use('/:projectId/task', taskRouter)
 
 router.get('/', getAllProjects) 
 router.get('/:projectId', getProject)

@@ -181,7 +181,7 @@ Task.belongsToMany(Task, {
   through: TaskDependency,
   foreignKey: "depends_on_task_id",
   otherKey: "task_id",
-  as: "dependentTasks",
+  as: "blockedTasks",
 });
 
 Task.hasMany(TaskComment,{
