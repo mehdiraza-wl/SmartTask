@@ -17,7 +17,7 @@ class ProjectMember extends Model<
 
   declare status: CreationOptional<"active" | "deactivated">;
 
-  declare joinedAt: CreationOptional<Date>;
+  declare joined_at: CreationOptional<Date>;
 
   declare readonly createdAt: CreationOptional<Date>;
   declare readonly updatedAt: CreationOptional<Date>;
@@ -40,7 +40,6 @@ ProjectMember.init(
     role: {
       type: DataTypes.ENUM("admin", "manager", "member"),
       allowNull: false,
-      defaultValue: "member",
     },
 
     status: {
@@ -49,7 +48,7 @@ ProjectMember.init(
       defaultValue: "active",
     },
 
-    joinedAt: {
+    joined_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
     },

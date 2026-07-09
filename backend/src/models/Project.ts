@@ -18,8 +18,8 @@ class Project extends Model<
   declare category_id: number;
   declare owner_id: number;
   declare status: "planned" | "active" | "archived";
-  declare startDate: Date;
-  declare endDate: Date | null;
+  declare start_date: Date;
+  declare end_date: Date | null;
   declare readonly createdAt: CreationOptional<Date>;
   declare readonly updatedAt: CreationOptional<Date>;
   declare members?: NonAttribute<User[]>;
@@ -56,11 +56,11 @@ Project.init(
       type: DataTypes.ENUM("planned", "active", "archived"),
       allowNull: false,
     },
-    startDate: {
+    start_date: {
       type: DataTypes.DATE,
       allowNull: false,
     },
-    endDate: {
+    end_date: {
       type: DataTypes.DATE,
       allowNull: true,
     },
