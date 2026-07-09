@@ -11,6 +11,6 @@ router.post('/verify', verifyEmail, validateRequest, asyncHandler(verifyUser))
 router.post('/logout', asyncHandler(logout))
 router.post('/reset-password', asyncHandler(resetPassword))
 router.post('/reset-password/:token', passwordValidation, asyncHandler(updatePassword))
-router.post('/refresh', (handleRefreshToken))
+router.post('/refresh', asyncHandler(handleRefreshToken))
 router.post('/login', verifyLoginCredentials, validateRequest, asyncHandler(login))
 export default router

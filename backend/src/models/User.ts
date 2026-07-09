@@ -1,8 +1,10 @@
 // models/User.ts
 
 import { DataTypes, Model } from "sequelize";
-import type {InferAttributes, InferCreationAttributes, CreationOptional} from "sequelize"
+import type {InferAttributes, InferCreationAttributes, CreationOptional, NonAttribute} from "sequelize"
 import sequelize from "../configs/database.js";
+import RefreshToken from "./RefreshToken.js";
+import Project from "./Project.js";
 
 class User extends Model<
   InferAttributes<User>,
@@ -19,8 +21,9 @@ class User extends Model<
   declare verificationTokenExpiry: Date;
   declare readonly createdAt: CreationOptional<Date>;
   declare readonly updatedAt: CreationOptional<Date>;
+  declare refreshTokens?: NonAttribute<RefreshToken[]>;
+  declare projects?: NonAttribute<Project[]>;
 }
-
 User.init(
   {
     id: {

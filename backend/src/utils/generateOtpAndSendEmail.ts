@@ -1,4 +1,4 @@
-import type User from "../models/user.js";
+import type User from "../models/User.js";
 import emailQueue from "../queues/email.queue.js";
 
 export const generateOtpAndSendEmail = async (user: User) => {
