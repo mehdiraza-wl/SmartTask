@@ -6,8 +6,9 @@ import { ProjectCategory, ProjectInvitation, ProjectMember, ProjectTags, User } 
 import ProjectActivity from '../models/ProjectActivityLog.js';
 import crypto from 'node:crypto';
 import emailQueue from '../queues/email.queue.js';
-import { Op, where } from 'sequelize';
+import { Op } from 'sequelize';
 import projectTags from '../models/ProjectTags.js';
+import Task from '../models/Task.js';
 
 export const getAllProjects = async (req:Request, res:Response, next: NextFunction) => {
     const userId = req.user!.id;
@@ -62,6 +63,47 @@ export const getAllProjects = async (req:Request, res:Response, next: NextFuncti
 };
 
 export const getProject = async (req:Request, res:Response, next: NextFunction) => {
+    const { projectId } = req.params;
+
+    const project = await Project.findByPk(Number(projectId), {
+        include: [
+            {
+                model: Task,
+                as: "tasks",
+                include: [
+                    {
+                        model: Task,
+                        as: "dependencies",
+                        attributes: ["id", "title", "status"],
+                        through: {
+                            attributes: [],
+                        },
+                    },
+                    {
+                        model: Task,
+                        as: "blockedTasks",
+                        attributes: ["id", "title", "status"],
+                        through: {
+                            attributes: [],
+                        },
+                    },
+                ],
+            },
+        ],
+    });
+
+    if (!project) {
+        res.status(404).json({
+            success: false,
+            message: "Project not found",
+        });
+        return;
+    }
+
+    res.status(200).json({
+        success: true,
+        data: project,
+    });
 }
 
 export const getProjectMembers = async (req:Request, res:Response, next: NextFunction) => {
@@ -190,7 +232,6 @@ export const createProject = async (req: Request, res: Response, next: NextFunct
                 description,
                 category_id,
                 status,
-                start_date: new Date(),
             },
             { transaction }
         );
