@@ -36,6 +36,26 @@ Project.belongsToMany(User, {
   as: "members",
 });
 
+ProjectMember.belongsTo(User, {
+  foreignKey: "user_id",
+  as: "user",
+});
+
+User.hasMany(ProjectMember, {
+  foreignKey: "user_id",
+  as: "projectMemberships",
+});
+
+ProjectMember.belongsTo(Project, {
+  foreignKey: "project_id",
+  as: "project",
+});
+
+Project.hasMany(ProjectMember, {
+  foreignKey: "project_id",
+  as: "projectMembers", //
+});
+
 Project.hasMany(ProjectInvitation, {
   foreignKey: "project_id",
   as: "invitations",

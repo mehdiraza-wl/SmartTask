@@ -28,6 +28,7 @@ class ProjectActivity extends Model<
     | "TASK_COMPLETED"
     | "TASK_UPDATED"
     | "MEMBER_ADDED"
+    | "MEMBER_UPDATED"
     | "MEMBER_REMOVED"
     | "PROJECT_CREATED"
     | "PROJECT_UPDATED"
@@ -71,6 +72,8 @@ ProjectActivity.init(
       "TASK_UPDATED",
       "MEMBER_ADDED",
       "MEMBER_REMOVED",
+      "MEMBER_UPDATED",
+      "PROJECT_CREATED",
       "PROJECT_UPDATED",
       "PROJECT_ARCHIVED"
     ),

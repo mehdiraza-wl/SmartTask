@@ -3,9 +3,11 @@ import type {
   InferAttributes,
   InferCreationAttributes,
   CreationOptional,
+  NonAttribute
 } from "sequelize";
 import sequelize from "../configs/database.js";
-
+import Project from "./Project.js";
+import User from "./User.js";
 class ProjectMember extends Model<
   InferAttributes<ProjectMember>,
   InferCreationAttributes<ProjectMember>
@@ -21,8 +23,9 @@ class ProjectMember extends Model<
 
   declare readonly createdAt: CreationOptional<Date>;
   declare readonly updatedAt: CreationOptional<Date>;
+  declare project?: NonAttribute<Project>;
+  declare user?: NonAttribute<User>;
 }
-
 ProjectMember.init(
   {
     project_id: {
