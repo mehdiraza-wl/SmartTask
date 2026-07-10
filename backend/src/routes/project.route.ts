@@ -1,7 +1,7 @@
 import  express  from "express";
 const router=express.Router();
 import passport from "../configs/passport.js"
-import { createProject, deleteProject, getAllProjects, getProject, sendExternalInvitation, sendProjectInvitation, sendExternalProjectView, getProjectMembers, updateProjectMember, acceptInvite, updateProject } from "../controllers/project.controller.js";
+import { createProject, deleteProject, getAllProjects, getProject, sendExternalInvitation, sendProjectInvitation, getProjectMembers, updateProjectMember, acceptInvite, updateProject, getExternalProjectView } from "../controllers/project.controller.js";
 import { createProjectValidation } from "../middlewares/projectValidation.js";
 import validateRequest from "../middlewares/validateResult.js";
 import { authorizeProjectRoles } from "../middlewares/authorizeProjectRoles.js";
@@ -19,7 +19,6 @@ router.get('/:projectId/members', getProjectMembers)
 router.patch('/:projectId/members/:userId', authorizeProjectRoles(["admin","manager"]), updateProjectMember) 
 router.post('/:projectId/invite', sendProjectInvitation) 
 router.post('/invite/:token', acceptInvite) 
-router.post('/:id/external-invite', sendExternalInvitation)
-router.get('/external-invite/:token', sendExternalProjectView) 
+router.post('/:projectId/external-invite', authorizeProjectRoles(["admin"]), sendExternalInvitation)
 
 export default router;

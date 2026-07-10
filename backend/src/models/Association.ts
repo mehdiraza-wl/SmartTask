@@ -184,6 +184,26 @@ Task.belongsToMany(Task, {
   as: "blockedTasks",
 });
 
+TaskDependency.belongsTo(Task, {
+    foreignKey: "task_id",
+    as: "task",
+});
+
+TaskDependency.belongsTo(Task, {
+    foreignKey: "depends_on_task_id",
+    as: "dependsOnTask",
+});
+
+Task.hasMany(TaskDependency, {
+    foreignKey: "task_id",
+    as: "taskDependencies",
+});
+
+Task.hasMany(TaskDependency, {
+    foreignKey: "depends_on_task_id",
+    as: "dependentTasks",
+});
+
 Task.hasMany(TaskComment,{
   foreignKey:"task_id",
   as:"comments",

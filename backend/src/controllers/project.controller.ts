@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { AppError } from '../utils/appError.js';
 import Project from '../models/Project.js';
 import sequelize from '../configs/database.js';
-import { ProjectCategory, ProjectInvitation, ProjectMember, ProjectTags, User } from '../models/index.js';
+import { ProjectCategory, ProjectInvitation, ProjectMember, ProjectTags, User, ProjectExternalInvitation } from '../models/index.js';
 import ProjectActivity from '../models/ProjectActivityLog.js';
 import crypto from 'node:crypto';
 import emailQueue from '../queues/email.queue.js';
@@ -60,7 +60,7 @@ export const getAllProjects = async (req:Request, res:Response, next: NextFuncti
     res.status(200).json({
         projects,
     });
-};
+}
 
 export const getProject = async (req:Request, res:Response, next: NextFunction) => {
     const { projectId } = req.params;
@@ -70,24 +70,6 @@ export const getProject = async (req:Request, res:Response, next: NextFunction) 
             {
                 model: Task,
                 as: "tasks",
-                include: [
-                    {
-                        model: Task,
-                        as: "dependencies",
-                        attributes: ["id", "title", "status"],
-                        through: {
-                            attributes: [],
-                        },
-                    },
-                    {
-                        model: Task,
-                        as: "blockedTasks",
-                        attributes: ["id", "title", "status"],
-                        through: {
-                            attributes: [],
-                        },
-                    },
-                ],
             },
         ],
     });
@@ -425,7 +407,49 @@ export const acceptInvite = async (req:Request, res:Response, next: NextFunction
 }
 
 export const sendExternalInvitation = async (req:Request, res:Response, next: NextFunction) => {
+    const {projectId} = req.params
+    const inviteToken=crypto.randomBytes(20).toString("hex")
+    const expiry=new Date(Date.now() + (7 * 24 * 60 * 60 * 1000)) //7 days expiry
+    await ProjectExternalInvitation.create({
+        token: inviteToken,
+        expiry,
+        project_id: Number(projectId)
+    })
+
+    res.status(201).json({
+        success: true,
+        token: inviteToken
+    })
 }
 
-export const sendExternalProjectView = async (req:Request, res:Response, next: NextFunction) => {
+export const getExternalProjectView = async (req:Request, res:Response, next: NextFunction) => {
+    const token = req.params.token as string
+    if(!token)
+        throw new AppError("No token provided", 404)
+    const project_external_invitations=await ProjectExternalInvitation.findByPk(token)
+    if(!project_external_invitations)
+    throw new AppError("Invalid Token", 400)
+    const {project_id} = project_external_invitations.dataValues;
+    
+    const project = await Project.findByPk(Number(project_id), {
+        include: [
+            {
+                model: Task,
+                as: "tasks",
+            },
+        ],
+    });
+
+    if (!project) {
+        res.status(404).json({
+            success: false,
+            message: "Project not found",
+        });
+        return;
+    }
+
+    res.status(200).json({
+        success: true,
+        data: project,
+    });
 }
