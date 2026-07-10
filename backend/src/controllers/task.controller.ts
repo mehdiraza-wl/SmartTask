@@ -1,12 +1,11 @@
 import type { Request, Response, NextFunction } from 'express';
 import { AppError } from '../utils/appError.js';
 import sequelize from '../configs/database.js';
-import {Task, Project, TaskAssignment, ProjectMember, TaskHistory} from '../models/index.js'
+import {Task, Project, TaskAssignment, ProjectMember, TaskHistory, TaskDependency} from '../models/index.js'
 
 
 export const createTask = async (req:Request, res:Response, next: NextFunction) => {
     const { projectId } = req.params;
-    console.log(projectId);
     
     await sequelize.transaction(async (transaction) => {
         const project = await Project.findByPk(Number(projectId), { transaction });
@@ -15,14 +14,13 @@ export const createTask = async (req:Request, res:Response, next: NextFunction) 
             throw new AppError("Project not found.", 404);
         }
 
-        const { title, description, status, priority, due_date } = req.body;
+        const { title, description, priority, due_date } = req.body;
 
         const task = await Task.create(
             {
                 project_id: Number(projectId),
                 title,
                 description,
-                status,
                 priority,
                 created_by: Number(req.user!.id),
                 due_date,
@@ -111,8 +109,94 @@ export const assignTask = async (req:Request, res:Response, next: NextFunction) 
     });
 }
 
+export const updateTask = async (req: Request, res: Response, next: NextFunction) => {
+    const { taskId } = req.params;
+    const { priority, status } = req.body;
 
-export const removeTaskAssignment = async (req:Request, res:Response, next: NextFunction) =>  {
+    const task = await Task.findByPk(Number(taskId));
+
+    if (!task) {
+        throw new AppError("Task not found.", 404);
+    }
+
+    // Validate dependencies only when starting/completing a task
+    if (
+        status &&
+        status !== "todo" &&
+        status !== task.status
+    ) {
+        const dependencies = await TaskDependency.findAll({
+            where: {
+                task_id: task.id,
+            },
+            include: [
+                {
+                    model: Task,
+                    as: "dependsOnTask",
+                    attributes: ["status"],
+                },
+            ],
+        });
+
+        const hasIncompleteDependency = dependencies.some(
+            (dependency) => dependency.dependsOnTask!.status !== "completed"
+        );
+
+        if (hasIncompleteDependency) {
+            throw new AppError(
+                "Task cannot start until all dependencies are completed.",
+                409
+            );
+        }
+    }
+
+    await sequelize.transaction(async (transaction) => {
+        const history: any[] = [];
+
+        if (priority && priority !== task.priority) {
+            history.push({
+                task_id: task.id,
+                changed_by_user_id: req.user!.id,
+                field_changed: "priority",
+                old_value: task.priority,
+                new_value: priority,
+            });
+
+            task.priority = priority;
+        }
+
+        if (status && status !== task.status) {
+            history.push({
+                task_id: task.id,
+                changed_by_user_id: req.user!.id,
+                field_changed: "status",
+                old_value: task.status,
+                new_value: status,
+            });
+
+            task.status = status;
+
+            if (status === "completed") {
+                task.completed_at = new Date();
+            } else {
+                task.completed_at = null;
+            }
+        }
+
+        await task.save({ transaction });
+
+        if (history.length) {
+            await TaskHistory.bulkCreate(history, { transaction });
+        }
+    });
+
+    res.status(200).json({
+        success: true,
+        message: "Task updated successfully.",
+    });
+};
+
+export const removeTaskAssignment = async (req:Request, res:Response, next: NextFunction) => {
     const { projectId, taskId, userId } = req.params;
 
     await sequelize.transaction(async (transaction) => {
@@ -160,5 +244,129 @@ export const removeTaskAssignment = async (req:Request, res:Response, next: Next
             success: true,
             message: "Assignment removed successfully.",
         });
+    });
+}
+
+export const assignTaskDependency = async (req:Request, res:Response, next: NextFunction) =>  {
+    const { taskId } = req.params;
+    const { depends_on_task_id } = req.body;
+
+    if (Number(taskId) === Number(depends_on_task_id)) {
+        throw new AppError("A task cannot depend on itself.", 400);
+    }
+
+    const task = await Task.findByPk(Number(taskId));
+    const dependencyTask = await Task.findByPk(Number(depends_on_task_id));
+
+    if (!task || !dependencyTask) {
+        throw new AppError("Task not found.", 404);
+    }
+
+    if (task.project_id !== dependencyTask.project_id) {
+        throw new AppError(
+            "Tasks from different projects cannot have dependencies.",
+            400
+        );
+    }
+    console.log("Checking");
+    
+    const existingDependency = await TaskDependency.findOne({
+        where: {
+            task_id: Number(taskId),
+            depends_on_task_id: Number(depends_on_task_id),
+        },
+    });
+    console.log(existingDependency);
+    
+
+    if (existingDependency) {
+        throw new AppError("Dependency already exists!!", 409);
+    }
+    console.log("Confirmed");
+    await sequelize.transaction(async (transaction) => {
+        await TaskDependency.create(
+            {
+                task_id: Number(taskId),
+                depends_on_task_id,
+            },
+            { transaction }
+        );
+
+        await TaskHistory.create(
+            {
+                task_id: Number(taskId),
+                changed_by_user_id: Number(req.user!.id),
+                field_changed: "dependency",
+                old_value: null,
+                new_value: String(depends_on_task_id),
+            },
+            { transaction }
+        );
+    });
+
+    res.status(201).json({
+        success: true,
+        message: "Task dependency assigned successfully.",
+    });
+}
+
+export const getTaskDependency = async (req:Request, res:Response, next: NextFunction) =>  {
+    const {taskId} = req.params
+
+    const task = await Task.findByPk(Number(taskId));
+    if(!taskId)
+        throw new AppError("Task not found.", 404);
+
+    const dependencies = await TaskDependency.findAll({
+        where: {
+            task_id: Number(taskId),
+        },
+        include: [
+            {
+                model: Task,
+                as: "dependsOnTask",
+                attributes: ["id", "title", "status", "priority"],
+            },
+        ],
+    });
+
+    res.status(200).json({
+        success: true,
+        data: dependencies,
+    });    
+}
+
+export const deleteTaskDependency = async (req:Request, res:Response, next: NextFunction) =>  {
+    const { taskId, dependencyId } = req.params;
+
+    const dependency = await TaskDependency.findOne({
+        where: {
+            task_id: Number(taskId),
+            depends_on_task_id: Number(dependencyId),
+        },
+    });
+
+    if (!dependency) {
+        throw new AppError("Task dependency not found.", 404);
+    }
+
+    await sequelize.transaction(async (transaction) => {
+        await dependency.destroy({ transaction });
+
+        await TaskHistory.create(
+            {
+                task_id: Number(taskId),
+                changed_by_user_id: Number(req.user!.id),
+                field_changed: "dependency",
+                old_value: String(dependencyId),
+                new_value: "DEPENDENCY_REMOVED",
+            },
+            { transaction }
+        );
+    });
+
+    res.status(200).json({
+        success: true,
+        message: "Task dependency removed successfully.",
     });
 }
