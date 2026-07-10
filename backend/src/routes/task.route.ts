@@ -4,6 +4,9 @@ const router=express.Router({ mergeParams: true });
 import commentRouter from './comment.route.js'
 import { authorizeProjectRoles } from "../middlewares/authorizeProjectRoles.js";
 import taskDependencyRouter from "./taskDependency.route.js"
+import { validateTaskId } from "../services/validateTaskId.js";
+
+router.use(validateTaskId)
 router.use('/:taskId/comments',commentRouter)
 router.use('/:taskId/dependency', taskDependencyRouter)
 

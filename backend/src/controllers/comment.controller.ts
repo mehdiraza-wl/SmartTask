@@ -15,11 +15,7 @@ export const addComment = async (req:Request, res:Response, next: NextFunction) 
                 project_id: projectId,
             },
             transaction,
-        });
-
-        if (!task) {
-            throw new AppError("Task not found.", 404);
-        }
+        }) as Task
 
         if (parent_comment_id) {
 
@@ -62,18 +58,7 @@ export const addComment = async (req:Request, res:Response, next: NextFunction) 
 }
 
 export const getComments = async (req:Request, res:Response, next: NextFunction) => {
-const { projectId, taskId } = req.params;
-
-    const task = await Task.findOne({
-        where: {
-            id: taskId,
-            project_id: projectId,
-        },
-    });
-
-    if (!task) {
-        throw new AppError("Task not found.", 404);
-    }
+    const { taskId } = req.params;
 
     const comments = await TaskComment.findAll({
         where: {
@@ -107,22 +92,10 @@ const { projectId, taskId } = req.params;
 }
 
 export const updateComment = async (req:Request, res:Response, next: NextFunction) => {
-    const { projectId, taskId, commentId } = req.params;
+    const { taskId, commentId } = req.params;
     const { content } = req.body;
 
     await sequelize.transaction(async (transaction) => {
-
-        const task = await Task.findOne({
-            where: {
-                id: taskId,
-                project_id: projectId,
-            },
-            transaction,
-        });
-
-        if (!task) {
-            throw new AppError("Task not found.", 404);
-        }
 
         const comment = await TaskComment.findOne({
             where: {
@@ -160,21 +133,9 @@ export const updateComment = async (req:Request, res:Response, next: NextFunctio
 }
 
 export const deleteComment = async (req:Request, res:Response, next: NextFunction) => {
-    const { projectId, taskId, commentId } = req.params;
+    const { taskId, commentId } = req.params;
 
     await sequelize.transaction(async (transaction) => {
-
-        const task = await Task.findOne({
-            where: {
-                id: taskId,
-                project_id: projectId,
-            },
-            transaction,
-        });
-
-        if (!task) {
-            throw new AppError("Task not found.", 404);
-        }
 
         const comment = await TaskComment.findOne({
             where: {

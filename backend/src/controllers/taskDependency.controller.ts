@@ -26,21 +26,16 @@ export const assignTaskDependency = async (req:Request, res:Response, next: Next
             400
         );
     }
-    console.log("Checking");
-    
     const existingDependency = await TaskDependency.findOne({
         where: {
             task_id: Number(taskId),
             depends_on_task_id: Number(depends_on_task_id),
         },
     });
-    console.log(existingDependency);
-    
 
     if (existingDependency) {
         throw new AppError("Dependency already exists!!", 409);
     }
-    console.log("Confirmed");
     await sequelize.transaction(async (transaction) => {
         await TaskDependency.create(
             {
@@ -70,10 +65,6 @@ export const assignTaskDependency = async (req:Request, res:Response, next: Next
 
 export const getTaskDependency = async (req:Request, res:Response, next: NextFunction) =>  {
     const {taskId} = req.params
-
-    const task = await Task.findByPk(Number(taskId));
-    if(!taskId)
-        throw new AppError("Task not found.", 404);
 
     const dependencies = await TaskDependency.findAll({
         where: {

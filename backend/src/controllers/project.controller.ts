@@ -4,9 +4,6 @@ import Project from '../models/Project.js';
 import sequelize from '../configs/database.js';
 import { ProjectCategory, ProjectInvitation, ProjectMember, ProjectTags, User, ProjectExternalInvitation } from '../models/index.js';
 import ProjectActivity from '../models/ProjectActivityLog.js';
-import crypto from 'node:crypto';
-import emailQueue from '../queues/email.queue.js';
-import { Op } from 'sequelize';
 import projectTags from '../models/ProjectTags.js';
 import Task from '../models/Task.js';
 
@@ -58,6 +55,7 @@ export const getAllProjects = async (req:Request, res:Response, next: NextFuncti
         }));
 
     res.status(200).json({
+        success: true,
         projects,
     });
 }
@@ -73,14 +71,6 @@ export const getProject = async (req:Request, res:Response, next: NextFunction) 
             },
         ],
     });
-
-    if (!project) {
-        res.status(404).json({
-            success: false,
-            message: "Project not found",
-        });
-        return;
-    }
 
     res.status(200).json({
         success: true,
@@ -185,8 +175,6 @@ export const updateProjectMember = async (req:Request, res:Response, next: NextF
 }
 
 export const createProject = async (req: Request, res: Response, next: NextFunction) => {
-    console.log("Inside create");
-    
     const {
         title,
         description,
@@ -204,8 +192,6 @@ export const createProject = async (req: Request, res: Response, next: NextFunct
         if (!category) {
             throw new AppError("Project category not found.", 500);
         }
-
-        console.log("Created");
 
         const project = await Project.create(
             {
@@ -261,11 +247,7 @@ export const createProject = async (req: Request, res: Response, next: NextFunct
 export const deleteProject = async (req: Request, res: Response, next: NextFunction) => {
         const { projectId } = req.params;
 
-        const project = await Project.findByPk(Number(projectId));
-
-        if (!project) {
-            throw new AppError("Project not found.", 404);
-        }
+        const project = await Project.findByPk(Number(projectId)) as Project;
 
         await sequelize.transaction(async (transaction) => {
         await project.update(

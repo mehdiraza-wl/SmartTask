@@ -8,11 +8,6 @@ export const createTask = async (req:Request, res:Response, next: NextFunction) 
     const { projectId } = req.params;
     
     await sequelize.transaction(async (transaction) => {
-        const project = await Project.findByPk(Number(projectId), { transaction });
-
-        if (!project) {
-            throw new AppError("Project not found.", 404);
-        }
 
         const { title, description, priority, due_date } = req.body;
 
@@ -113,11 +108,7 @@ export const updateTask = async (req: Request, res: Response, next: NextFunction
     const { taskId } = req.params;
     const { priority, status } = req.body;
 
-    const task = await Task.findByPk(Number(taskId));
-
-    if (!task) {
-        throw new AppError("Task not found.", 404);
-    }
+    const task = await Task.findByPk(Number(taskId)) as Task
 
     // Validate dependencies only when starting/completing a task
     if (
@@ -206,11 +197,7 @@ export const removeTaskAssignment = async (req:Request, res:Response, next: Next
                 project_id: projectId,
             },
             transaction,
-        });
-
-        if (!task) {
-            throw new AppError("Task not found.", 404);
-        }
+        }) as Task
 
         const assignment = await TaskAssignment.findOne({
             where: {
