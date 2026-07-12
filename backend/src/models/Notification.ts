@@ -26,6 +26,7 @@ class Notification extends Model<
 
   declare isRead: CreationOptional<boolean>;
 
+  declare notificationType: "task_comment" | "task_assignment" | "task_status"
 
   // associations
 
@@ -66,6 +67,10 @@ Notification.init(
     type:DataTypes.BOOLEAN,
     allowNull:false,
     defaultValue: false
+  },
+  notificationType:{
+    type:DataTypes.ENUM("task_comment" , "task_assignment" , "task_status"),
+    allowNull:false,
   },
 
   createdAt: DataTypes.DATE,

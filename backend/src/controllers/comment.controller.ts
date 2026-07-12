@@ -66,7 +66,8 @@ export const addComment = async (req:Request, res:Response, next: NextFunction) 
                             user_id: userId,
                             project_id: Number(projectId),
                             task_id: Number(taskId),
-                            description: `There's a comment added on Task '${task.title}' in Project '${task.project!.title}': ${content}`
+                            description: `There's a comment added on Task '${task.title}' in Project '${task.project!.title}': ${content}`,
+                            notificationType: "task_comment"
                         },
                         { transaction }
                     );

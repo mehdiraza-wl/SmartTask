@@ -105,7 +105,8 @@ export const assignTask = async (req:Request, res:Response, next: NextFunction) 
             user_id: userId,
             project_id: Number(projectId),
             task_id: Number(taskId),
-            description: `You have been assigned task '${task.dataValues.title}' in Project '${task.project!.title}' as ${assignment_type}`
+            description: `You have been assigned task '${task.dataValues.title}' in Project '${task.project!.title}' as ${assignment_type}`,
+            notificationType: "task_assignment"
         })
 
         res.status(201).json({
@@ -196,7 +197,8 @@ export const updateTask = async (req: Request, res: Response, next: NextFunction
                     user_id: userId,
                     project_id: Number(projectId),
                     task_id: Number(taskId),
-                    description: `Task '${task.dataValues.title}' status in Project '${task.project!.title}' has been update to ${status}`
+                    description: `Task '${task.dataValues.title}' status in Project '${task.project!.title}' has been update to ${status}`,
+                    notificationType: "task_status"
                 }, {transaction})
             }
             }
