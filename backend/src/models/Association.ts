@@ -13,7 +13,7 @@ import TaskHistory from "./TaskHistory.js";
 import TaskDependency from "./TaskDependency.js";
 import TaskComment from "./TaskComment.js";
 import ProjectActivity from "./ProjectActivityLog.js";
-
+import Notification from "./Notification.js";
 
 
 User.hasMany(RefreshToken, {
@@ -259,3 +259,12 @@ ProjectActivity.belongsTo(User,{
   as:"user",
 });
 
+User.hasMany(Notification, {
+    foreignKey: "user_id",
+    as: "notifications",
+});
+
+Notification.belongsTo(User, {
+    foreignKey: "user_id",
+    as: "user",
+});

@@ -8,7 +8,7 @@ import { authorizeProjectRoles } from "../middlewares/authorizeProjectRoles.js";
 import taskRouter from "../routes/task.route.js"
 import projectInvitationRouter from "./projectInvitation.route.js"
 
-router.use(validateRequest)
+router.use('/:projectId',validateRequest)
 router.use(passport.authenticate('jwt', { session: false }))
 router.use('/:projectId/task', taskRouter)
 router.use('/:projectId/invitation', projectInvitationRouter)

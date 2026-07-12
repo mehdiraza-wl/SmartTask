@@ -1,7 +1,8 @@
 import type { Request, Response, NextFunction } from 'express';
 import { AppError } from '../utils/appError.js';
 import sequelize from '../configs/database.js';
-import {Task, User, TaskComment} from '../models/index.js'
+import {Task, User, TaskComment, Notification, Project} from '../models/index.js'
+import { getTaskCreatorAndAssignee } from '../utils/getTaskCreaterAndAssignee.js';
 
 export const addComment = async (req:Request, res:Response, next: NextFunction) => {
     const { projectId, taskId } = req.params;
@@ -14,6 +15,10 @@ export const addComment = async (req:Request, res:Response, next: NextFunction) 
                 id: taskId,
                 project_id: projectId,
             },
+            include: [{
+                model: Project,
+                as: "project"
+            }],
             transaction,
         }) as Task
 
@@ -48,6 +53,26 @@ export const addComment = async (req:Request, res:Response, next: NextFunction) 
             },
             { transaction }
         );
+
+
+        console.log(taskId);
+        console.log(projectId);
+        
+        const recipients = await getTaskCreatorAndAssignee(Number(taskId), Number(req.user!.id))
+            if(recipients){
+                for (const userId of recipients) {
+                    await Notification.create(
+                        {
+                            user_id: userId,
+                            project_id: Number(projectId),
+                            task_id: Number(taskId),
+                            description: `There's a comment added on Task '${task.title}' in Project '${task.project!.title}': ${content}`,
+                            notificationType: "task_comment"
+                        },
+                        { transaction }
+                    );
+                }
+            }
 
         res.status(201).json({
             success: true,
