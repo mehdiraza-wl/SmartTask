@@ -2,8 +2,11 @@ import type { Request, Response, NextFunction } from 'express';
 import { AppError } from '../utils/appError.js';
 import Project from '../models/Project.js';
 import sequelize from '../configs/database.js';
-import { ProjectCategory, ProjectInvitation, ProjectMember, ProjectTags, User, ProjectExternalInvitation } from '../models/index.js';
+import { ProjectCategory, ProjectInvitation, ProjectMember, ProjectTags, User } from '../models/index.js';
 import ProjectActivity from '../models/ProjectActivityLog.js';
+import crypto from 'node:crypto';
+import emailQueue from '../queues/email.queue.js';
+import { Op } from 'sequelize';
 import projectTags from '../models/ProjectTags.js';
 import Task from '../models/Task.js';
 
@@ -55,10 +58,9 @@ export const getAllProjects = async (req:Request, res:Response, next: NextFuncti
         }));
 
     res.status(200).json({
-        success: true,
         projects,
     });
-}
+};
 
 export const getProject = async (req:Request, res:Response, next: NextFunction) => {
     const { projectId } = req.params;
@@ -68,9 +70,35 @@ export const getProject = async (req:Request, res:Response, next: NextFunction) 
             {
                 model: Task,
                 as: "tasks",
+                include: [
+                    {
+                        model: Task,
+                        as: "dependencies",
+                        attributes: ["id", "title", "status"],
+                        through: {
+                            attributes: [],
+                        },
+                    },
+                    {
+                        model: Task,
+                        as: "blockedTasks",
+                        attributes: ["id", "title", "status"],
+                        through: {
+                            attributes: [],
+                        },
+                    },
+                ],
             },
         ],
     });
+
+    if (!project) {
+        res.status(404).json({
+            success: false,
+            message: "Project not found",
+        });
+        return;
+    }
 
     res.status(200).json({
         success: true,
@@ -175,6 +203,8 @@ export const updateProjectMember = async (req:Request, res:Response, next: NextF
 }
 
 export const createProject = async (req: Request, res: Response, next: NextFunction) => {
+    console.log("Inside create");
+    
     const {
         title,
         description,
@@ -192,6 +222,8 @@ export const createProject = async (req: Request, res: Response, next: NextFunct
         if (!category) {
             throw new AppError("Project category not found.", 500);
         }
+
+        console.log("Created");
 
         const project = await Project.create(
             {
@@ -247,7 +279,11 @@ export const createProject = async (req: Request, res: Response, next: NextFunct
 export const deleteProject = async (req: Request, res: Response, next: NextFunction) => {
         const { projectId } = req.params;
 
-        const project = await Project.findByPk(Number(projectId)) as Project;
+        const project = await Project.findByPk(Number(projectId));
+
+        if (!project) {
+            throw new AppError("Project not found.", 404);
+        }
 
         await sequelize.transaction(async (transaction) => {
         await project.update(
@@ -274,6 +310,42 @@ export const deleteProject = async (req: Request, res: Response, next: NextFunct
     });
 
 };
+
+export const sendProjectInvitation = async (req:Request, res:Response, next: NextFunction) => {
+    const {projectId}=req.params
+    const {invitedEmail, role} = req.body
+    const existing = await ProjectInvitation.findOne({
+        where: {
+            project_id: projectId,
+            invitedEmail,
+            status: "pending",
+            expiry: {
+                [Op.gt]: new Date(),
+            },
+        },
+    });
+    if (existing) 
+        throw new AppError("Invitation already sent.", 409);
+    
+    const inviteToken=crypto.randomBytes(20).toString("hex")
+    const expiry=new Date(Date.now() + (7 * 24 * 60 * 60 * 1000)) //7 days expiry
+    const projectInvitation=await ProjectInvitation.create({
+        project_id: Number(projectId),
+        token: inviteToken,
+        invitedEmail,
+        role,
+        expiry
+    })
+    await emailQueue.add({
+        email: invitedEmail,
+        subject: "Verification Code",
+        message: `You can join the project using link: ${process.env.CLIENT_URL}/project/invite/${inviteToken}`,
+    });
+    res.status(200).json({
+        success: true,
+        message: "invitation sent successfully"
+    })
+}
 
 export const acceptInvite = async (req:Request, res:Response, next: NextFunction) => {
         const { token } = req.params;
@@ -352,34 +424,8 @@ export const acceptInvite = async (req:Request, res:Response, next: NextFunction
         });
 }
 
-export const getExternalProjectView = async (req:Request, res:Response, next: NextFunction) => {
-    const token = req.params.token as string
-    if(!token)
-        throw new AppError("No token provided", 404)
-    const project_external_invitations=await ProjectExternalInvitation.findByPk(token)
-    if(!project_external_invitations)
-    throw new AppError("Invalid Token", 400)
-    const {project_id} = project_external_invitations.dataValues;
-    
-    const project = await Project.findByPk(Number(project_id), {
-        include: [
-            {
-                model: Task,
-                as: "tasks",
-            },
-        ],
-    });
+export const sendExternalInvitation = async (req:Request, res:Response, next: NextFunction) => {
+}
 
-    if (!project) {
-        res.status(404).json({
-            success: false,
-            message: "Project not found",
-        });
-        return;
-    }
-
-    res.status(200).json({
-        success: true,
-        data: project,
-    });
+export const sendExternalProjectView = async (req:Request, res:Response, next: NextFunction) => {
 }

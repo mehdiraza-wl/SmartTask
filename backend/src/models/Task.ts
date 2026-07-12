@@ -31,7 +31,7 @@ class Task extends Model<
 
   declare completed_at: Date | null;
 
-  declare status: CreationOptional<"todo" | "in-progress" | "completed">;
+  declare status: "todo" | "in-progress" | "completed";
 
 
   // Associations

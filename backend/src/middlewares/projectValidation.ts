@@ -11,6 +11,10 @@ export const createProjectValidation = [
         .notEmpty()
         .withMessage("Project description is required."),
 
+    body('owner_id')
+    .notEmpty()
+    .withMessage("Owner id is required"),
+
     body("category_id")
         .notEmpty()
         .withMessage("Project category is required."),

@@ -5,7 +5,6 @@ import projectRouter from './routes/project.route.js'
 import cookieParser from 'cookie-parser'
 import { errorHandler } from './middlewares/errorHandler.js';
 import passport from './configs/passport.js';
-import { getExternalProjectView } from './controllers/project.controller.js';
 const app = express();
 
 
@@ -17,7 +16,7 @@ app.use(cookieParser())
 app.use('/api/auth', authRouter)
 app.use('/api/user', userRouter)
 app.use('/api/projects', projectRouter)
-app.get('/api/external-invite/:token', getExternalProjectView) 
+
 app.use(errorHandler);
 
 export default app;
