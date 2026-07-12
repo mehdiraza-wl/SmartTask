@@ -1,7 +1,8 @@
 import type { Request, Response, NextFunction } from 'express';
 import { AppError } from '../utils/appError.js';
 import sequelize from '../configs/database.js';
-import {Task, Project, TaskAssignment, ProjectMember, TaskHistory, TaskDependency} from '../models/index.js'
+import {Task, Project, TaskAssignment, ProjectMember, TaskHistory, TaskDependency, Notification} from '../models/index.js'
+import { getTaskCreatorAndAssignee } from '../utils/getTaskCreaterAndAssignee.js';
 
 
 export const createTask = async (req:Request, res:Response, next: NextFunction) => {
@@ -52,6 +53,10 @@ export const assignTask = async (req:Request, res:Response, next: NextFunction) 
                 id: taskId,
                 project_id: projectId,
             },
+            include: {
+                model: Project,
+                as: "project"
+            },
             transaction,
         });
 
@@ -96,6 +101,13 @@ export const assignTask = async (req:Request, res:Response, next: NextFunction) 
             { transaction }
         );
 
+        await Notification.create({
+            user_id: userId,
+            project_id: Number(projectId),
+            task_id: Number(taskId),
+            description: `You have been assigned task '${task.dataValues.title}' in Project '${task.project!.title}' as ${assignment_type}`
+        })
+
         res.status(201).json({
             success: true,
             message: "Task assigned successfully.",
@@ -105,10 +117,15 @@ export const assignTask = async (req:Request, res:Response, next: NextFunction) 
 }
 
 export const updateTask = async (req: Request, res: Response, next: NextFunction) => {
-    const { taskId } = req.params;
+    const { projectId ,taskId } = req.params;
     const { priority, status } = req.body;
 
-    const task = await Task.findByPk(Number(taskId)) as Task
+    const task = await Task.findByPk(Number(taskId), {
+        include: [{
+            model: Project,
+            as: "project"
+        }]
+    }) as Task
 
     // Validate dependencies only when starting/completing a task
     if (
@@ -171,6 +188,17 @@ export const updateTask = async (req: Request, res: Response, next: NextFunction
                 task.completed_at = new Date();
             } else {
                 task.completed_at = null;
+            }
+            const recipients = await getTaskCreatorAndAssignee(Number(taskId), Number(req.user!.id))
+            if(recipients){
+                for(const userId of recipients) {
+                    await Notification.create({
+                    user_id: userId,
+                    project_id: Number(projectId),
+                    task_id: Number(taskId),
+                    description: `Task '${task.dataValues.title}' status in Project '${task.project!.title}' has been update to ${status}`
+                }, {transaction})
+            }
             }
         }
 
