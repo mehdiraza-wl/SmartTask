@@ -2,7 +2,7 @@ import Task from "../models/Task.js";
 import TaskAssignment from "../models/TaskAssignment.js";
 
 export const getTaskCreatorAndAssignee = async (
-  taskId: number, excludeUserId: number
+  taskId: number, excludeUserId?: number
 ): Promise<number[]> => {
   const task = await Task.findByPk(taskId, {
     attributes: ["created_by"],
@@ -26,8 +26,9 @@ export const getTaskCreatorAndAssignee = async (
   assignments.forEach((assignment) => {
     userIds.add(assignment.user_id);
   });
-
-  userIds.delete(excludeUserId)
+  
+  if(excludeUserId)
+    userIds.delete(excludeUserId)
 
   return [...userIds];
 };
