@@ -15,6 +15,7 @@ import TaskComment from "./TaskComment.js";
 import ProjectActivity from "./ProjectActivityLog.js";
 import ProjectMessage from "./ProjectMessages.js";
 
+import Notification from "./Notification.js";
 
 
 User.hasMany(RefreshToken, {
@@ -278,4 +279,13 @@ User.hasMany(ProjectMessage, {
 ProjectMessage.belongsTo(User, {
     foreignKey: "sender_id",
     as: "sender",
+});
+User.hasMany(Notification, {
+    foreignKey: "user_id",
+    as: "notifications",
+});
+
+Notification.belongsTo(User, {
+    foreignKey: "user_id",
+    as: "user",
 });

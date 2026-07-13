@@ -17,5 +17,5 @@ import ProjectMessage from "./ProjectMessages.js";
 
 
 export {
-    User, Project,ProjectInvitation,ProjectMember,RefreshToken,ProjectCategory, ProjectExternalInvitation, ProjectTags, Task, TaskAssignment, TaskComment, TaskDependency, TaskHistory, ProjectMessage ,sequelize
+    User, Project,ProjectInvitation,ProjectMember,RefreshToken,ProjectCategory, ProjectExternalInvitation, ProjectTags, Task, TaskAssignment, TaskComment, TaskDependency, TaskHistory, ProjectMessage, Notification ,sequelize
 }
