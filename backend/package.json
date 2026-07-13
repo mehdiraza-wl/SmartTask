@@ -6,7 +6,8 @@
     "dev": "tsc -w & nodemon dist/server.js",
     "build": "tsc",
     "start": "node dist/server.js",
-    "worker": "nodemon dist/queues/workers/email.worker.js"
+    "worker": "nodemon dist/queues/workers/email.worker.js",
+    "reminderWorker": "nodemon dist/queues/workers/reminder.worker.js"
   },
   "keywords": [],
   "author": "",
