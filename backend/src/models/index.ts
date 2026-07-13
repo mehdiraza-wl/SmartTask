@@ -14,6 +14,7 @@ import TaskDependency from "./TaskDependency.js";
 import "./Association.js"
 import TaskHistory from "./TaskHistory.js";
 import ProjectMessage from "./ProjectMessages.js";
+import Notification from "./Notification.js";
 
 
 export {
