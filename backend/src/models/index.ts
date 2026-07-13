@@ -13,9 +13,9 @@ import TaskComment from "./TaskComment.js";
 import TaskDependency from "./TaskDependency.js";
 import "./Association.js"
 import TaskHistory from "./TaskHistory.js";
-import Notification from "./Notification.js";
+import ProjectMessage from "./ProjectMessages.js";
 
 
 export {
-    User, Project,ProjectInvitation,ProjectMember,RefreshToken,ProjectCategory, ProjectExternalInvitation, ProjectTags, Task, TaskAssignment, TaskComment, TaskDependency, TaskHistory, Notification ,sequelize
+    User, Project,ProjectInvitation,ProjectMember,RefreshToken,ProjectCategory, ProjectExternalInvitation, ProjectTags, Task, TaskAssignment, TaskComment, TaskDependency, TaskHistory, ProjectMessage, Notification ,sequelize
 }
