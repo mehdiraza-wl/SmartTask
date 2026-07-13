@@ -13,6 +13,7 @@ import TaskHistory from "./TaskHistory.js";
 import TaskDependency from "./TaskDependency.js";
 import TaskComment from "./TaskComment.js";
 import ProjectActivity from "./ProjectActivityLog.js";
+import ProjectMessage from "./ProjectMessages.js";
 
 
 
@@ -259,3 +260,22 @@ ProjectActivity.belongsTo(User,{
   as:"user",
 });
 
+Project.hasMany(ProjectMessage, {
+    foreignKey: "project_id",
+    as: "messages",
+});
+
+ProjectMessage.belongsTo(Project, {
+    foreignKey: "project_id",
+    as: "project",
+});
+
+User.hasMany(ProjectMessage, {
+    foreignKey: "sender_id",
+    as: "sentMessages",
+});
+
+ProjectMessage.belongsTo(User, {
+    foreignKey: "sender_id",
+    as: "sender",
+});

@@ -7,12 +7,14 @@ import validateRequest from "../middlewares/validateResult.js";
 import { authorizeProjectRoles } from "../middlewares/authorizeProjectRoles.js";
 import taskRouter from "../routes/task.route.js"
 import projectInvitationRouter from "./projectInvitation.route.js"
+import projectMessageRouter from "./projectMessage.route.js"
+import { validateProjectId } from "../services/validateProjectId.js";
 
-router.use(validateRequest)
 router.use(passport.authenticate('jwt', { session: false }))
+router.use('/:projectId', validateProjectId)
 router.use('/:projectId/task', taskRouter)
 router.use('/:projectId/invitation', projectInvitationRouter)
-
+router.use('/:projectId/messages', projectMessageRouter)
 
 router.get('/', getAllProjects) 
 router.get('/:projectId', getProject)
